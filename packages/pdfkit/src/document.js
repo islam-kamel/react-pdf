@@ -1,3 +1,8 @@
+/*
+PDFDocument - represents an entire PDF document
+By Devon Govett
+*/
+
 import stream from 'stream';
 import PDFObject from './object';
 import PDFReference from './reference';
@@ -14,12 +19,14 @@ import OutlineMixin from './mixins/outline';
 import MarkingsMixin from './mixins/markings';
 import AcroFormMixin from './mixins/acroform';
 import AttachmentsMixin from './mixins/attachments';
+import LineWrapper from './line_wrapper';
+import SubsetMixin from './mixins/subsets';
 import MetadataMixin from './mixins/metadata';
 import capitalize from './utils/capitalize';
 
 class PDFDocument extends stream.Readable {
   constructor(options = {}) {
-    super();
+    super(options);
     this.options = options;
 
     // PDF version
@@ -93,7 +100,8 @@ class PDFDocument extends stream.Readable {
     this.initText();
     this.initImages();
     this.initOutline();
-    // this.initMarkings(options)
+    this.initSubset(options);
+    this.initMarkings(options);
 
     // Initialize the metadata
     this.info = {
@@ -163,6 +171,16 @@ class PDFDocument extends stream.Readable {
     return this;
   }
 
+  continueOnNewPage(options) {
+    const pageMarkings = this.endPageMarkings(this.page);
+
+    this.addPage(options ?? this.page._options);
+
+    this.initPageMarkings(pageMarkings);
+
+    return this;
+  }
+
   flushPages() {
     // this local variable exists so we're future-proof against
     // reentrant calls to flushPages.
@@ -170,7 +188,7 @@ class PDFDocument extends stream.Readable {
     this._pageBuffer = [];
     this._pageBufferStart += pages.length;
     for (let page of Array.from(pages)) {
-      // this.endPageMarkings(page);
+      this.endPageMarkings(page);
       page.end();
     }
   }
@@ -265,7 +283,11 @@ class PDFDocument extends stream.Readable {
     }
 
     this.endOutline();
-    // this.endMarkings();
+    this.endMarkings();
+
+    if (this.subset) {
+      this.endSubset();
+    }
 
     this._root.end();
     this._root.data.Pages.end();
@@ -325,33 +347,6 @@ class PDFDocument extends stream.Readable {
   toString() {
     return '[object PDFDocument]';
   }
-
-  initColor() {}
-
-  initVector() {}
-
-  initFonts() {}
-
-  initText() {}
-
-  initImages() {}
-
-  initOutline() {}
-
-  /**
-   * @param {number} m11
-   * @param {number} m12
-   * @param {number} m21
-   * @param {number} m22
-   * @param {number} dx
-   * @param {number} dy
-   */
-  // eslint-disable-next-line no-unused-vars
-  transform(m11, m12, m21, m22, dx, dy) {}
-
-  endOutline() {}
-
-  endAcroForm() {}
 }
 
 const mixin = (methods) => {
@@ -370,5 +365,8 @@ mixin(OutlineMixin);
 mixin(MarkingsMixin);
 mixin(AcroFormMixin);
 mixin(AttachmentsMixin);
+mixin(SubsetMixin);
+
+PDFDocument.LineWrapper = LineWrapper;
 
 export default PDFDocument;

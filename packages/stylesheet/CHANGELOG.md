@@ -1,5 +1,19 @@
 # @react-pdf/stylesheet
 
+## 5.2.2
+
+### Patch Changes
+
+- Updated dependencies [[`d36ace66`](https://github.com/diegomura/react-pdf/commit/d36ace66c77d57d845894e89772be7ae0cdd25ee)]:
+  - @react-pdf/fns@3.1.0
+
+## 5.2.1
+
+### Patch Changes
+
+- Updated dependencies [[`01944231`](https://github.com/diegomura/react-pdf/commit/01944231a342d502b832aeecb4c313020b8360c8)]:
+  - @react-pdf/types@2.7.1
+
 ## 5.2.0
 
 ### Minor Changes

@@ -98,10 +98,10 @@ const AlmostInfinity = 999999999999;
 
 const shrinkWhitespaceFactor = { before: -0.5, after: -0.5 };
 
-const layoutTspan = (fontStore) => (node) => {
+const layoutTspan = (fontStore) => (node, xOffset) => {
   const attributedString = getAttributedString(fontStore, node);
 
-  const x = node.props?.x || 0;
+  const x = node.props.x === undefined ? xOffset : node.props.x;
   const y = node.props?.y || 0;
 
   const container = { x, y, width: AlmostInfinity, height: AlmostInfinity };
@@ -117,10 +117,41 @@ const layoutTspan = (fontStore) => (node) => {
   return Object.assign({}, node, { lines });
 };
 
+// Consecutive <tspan> elements should be joined with a space
+const joinTSpanLines = (node) => {
+  const children = node.children.map((child, index) => {
+    const textInstance = child.children[0];
+
+    if (
+      child.props.x === undefined &&
+      index < node.children.length - 1 &&
+      textInstance?.value
+    ) {
+      return Object.assign({}, child, {
+        children: [{ ...textInstance, value: `${textInstance.value} ` }],
+      });
+    }
+
+    return child;
+  }, []);
+
+  return Object.assign({}, node, { children });
+};
+
 const layoutText = (fontStore, node) => {
   if (!node.children) return node;
 
-  const children = node.children.map(layoutTspan(fontStore));
+  let currentXOffset = node.props?.x || 0;
+
+  const layoutFn = layoutTspan(fontStore);
+
+  const joinedNode = joinTSpanLines(node);
+
+  const children = joinedNode.children.map((child) => {
+    const childWithLayout = layoutFn(child, currentXOffset);
+    currentXOffset += childWithLayout.lines[0].xAdvance;
+    return childWithLayout;
+  });
 
   return Object.assign({}, node, { children });
 };
